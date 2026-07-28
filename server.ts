@@ -9,7 +9,9 @@ const app = express();
 const prisma = new PrismaClient({ adapter }); // veritabanı bağlantımız
 const PORT = process.env.PORT || 5000;
 
-app.use(cors());
+app.use(cors({
+  origin: ["http://localhost:5173", "https://todo-app-frontend-puce-nine.vercel.app"]
+}));
 app.use(express.json());
 
 // --- READ: Tüm görevleri getir ---
