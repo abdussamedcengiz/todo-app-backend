@@ -6,3 +6,7 @@ node_modules
 dev.db
 *.db
 *.db-journal
+.agents
+.claude
+.windsurf
+skills-lock.json

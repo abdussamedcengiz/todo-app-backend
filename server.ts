@@ -1,15 +1,13 @@
 import express, { Request, Response } from "express";
+import "dotenv/config";
 import cors from "cors";
 import { PrismaClient } from "./generated/prisma/client";
-import { PrismaLibSql } from "@prisma/adapter-libsql";
-
-// Prisma 7, veritabanına bağlanmak için bir "adapter" ister.
-// SQLite dosyamızın (dev.db) yolunu adaptöre veriyoruz.
-const adapter = new PrismaLibSql({ url: "file:./dev.db" });
+import { PrismaPg } from "@prisma/adapter-pg";
+const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL });
 
 const app = express();
 const prisma = new PrismaClient({ adapter }); // veritabanı bağlantımız
-const PORT = 5000;
+const PORT = process.env.PORT || 5000;
 
 app.use(cors());
 app.use(express.json());
