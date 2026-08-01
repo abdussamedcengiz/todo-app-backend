@@ -1,48 +1,65 @@
-# Kaldığımız yer — Kullanıcı girişi (login)
+# Proje durumu — To-Do App
 
 ## Tamamlananlar ✅
 
-- **Şema**: `User` modeli eklendi, `Todo`'ya `userId` ilişkisi kuruldu
-- **Migration**: `migrate reset` + `add-users` çalıştırıldı (veritabanı temiz)
-- **Paketler**: `bcryptjs`, `jsonwebtoken` (+ types) kuruldu
-- **`.env`**: `JWT_SECRET` eklendi
-- **`POST /register`**: çalışıyor — şifreyi hash'ler, kullanıcı oluşturur, token döner
-- **`POST /login`**: yazıldı — son düzeltmeler yapılıyordu
+### Temel
+- React + TypeScript + Tailwind frontend (Vite)
+- Node + Express + Prisma backend (TypeScript, tsx)
+- PostgreSQL veritabanı (Neon)
+- Tam CRUD: ekle, listele, düzenle, sil, tamamla
+- Filtreleme (Tümü / Aktif / Tamamlanan), kalan sayacı, tamamlananları temizle
+- Yükleniyor / hata durumları
+- Custom hook (`useTodos`), API katmanı (`api.ts`)
+- React Router: `/`, `/about`, `/login`
 
-## Son düzeltme (yarım kalan)
+### Kullanıcı girişi
+- `User` modeli + `Todo.userId` ilişkisi
+- `POST /register` — bcrypt ile şifre hash'leme
+- `POST /login` — şifre doğrulama, JWT üretimi
+- `auth` middleware — token doğrulama, `req.userId`
+- Tüm todo route'ları kullanıcıya bağlı (herkes sadece kendi görevlerini görür)
+- Frontend: `LoginPage`, `localStorage`'da token, `RequireAuth` korumalı rota, çıkış butonu
 
-`server.ts` içindeki `/login` route'unda:
+### Yayın
+- Frontend: Vercel
+- Backend: Render
+- Veritabanı: Neon
+- Git: iki ayrı repo, push edince otomatik deploy
 
-1. `if (!valid)` bloğuna **`return`** ekle (şu an yanlış şifreyle token dönebiliyor — güvenlik açığı)
-2. Hata mesajını diğeriyle aynı yap: `"E-posta veya şifre hatalı"` (bilgi sızdırmasın)
-3. Son satırdaki `res.status(201)` → `res.json({ token })` (201 sadece oluşturma içindir)
+## Yapılabilecekler
 
-Sonra test:
+1. **LoginPage'e Tailwind stilleri** — şu an çıplak görünüyor
+2. **401 yakalama** — token süresi dolunca otomatik giriş sayfasına yönlendirme
+3. **Ayrı geliştirme veritabanı** — şu an yerel ve canlı aynı Neon veritabanını kullanıyor
+   (Neon'da ikinci proje aç, yerel `.env`'e onun adresini yaz)
+4. **Yeni alanlar** — son tarih, öncelik (şema + migration pratiği)
+5. **Sıralama / arama**
+6. **Karanlık mod** (`dark:` öneki ile Tailwind'de kolay)
+
+## Öğrenilen dersler (tekrar için)
+
+- `res.json()` cevabı gönderir ama fonksiyonu **durdurmaz** → hata dönüşlerinde `return` kullan
+- Yetkilendirme **her sorguya** gömülmeli (`where: { id, userId }`)
+- `findUnique` sadece benzersiz alanlarla çalışır → çok koşullu arama için `findFirst`
+- Hook'lar sadece bileşen/custom hook **içinde** çağrılır
+- Süslü parantezler kapsamı belirler → kodun fonksiyon içinde mi dışında mı olduğuna dikkat
+- `fetch` hata kodlarında hata fırlatmaz → `if (!res.ok)` kontrolü şart
+- Şifreler ve anahtarlar koda değil **ortam değişkenine** yazılır
+- `.gitignore` sadece henüz takip edilmeyen dosyalar için çalışır
+
+## Çalıştırma
 
 ```bash
-# kayıt
-curl -X POST http://localhost:5000/register -H "Content-Type: application/json" -d "{\"email\":\"test@test.com\",\"password\":\"123456\"}"
+# Terminal 1 — backend
+cd C:\Users\cengiz\OneDrive\Desktop\todo-app-backend\backend
+npm run dev
 
-# giriş (doğru şifre → token dönmeli)
-curl -X POST http://localhost:5000/login -H "Content-Type: application/json" -d "{\"email\":\"test@test.com\",\"password\":\"123456\"}"
+# Terminal 2 — frontend
+cd C:\Users\cengiz\OneDrive\Desktop\todo-app\frontend
+npm run dev
 
-# giriş (yanlış şifre → 401, token DÖNMEMELİ)
-curl -X POST http://localhost:5000/login -H "Content-Type: application/json" -d "{\"email\":\"test@test.com\",\"password\":\"yanlis\"}"
+# Veritabanını görüntüle (backend klasöründe)
+npx prisma studio
 ```
 
-## Sıradaki adımlar
-
-1. **Auth middleware** — gelen istekteki token'ı doğrulayıp `req.userId`'yi dolduran ara katman
-2. **Todo route'larını kullanıcıya bağlama** — herkes sadece kendi görevlerini görsün
-   (`findMany({ where: { userId } })`, `create({ data: { text, userId } })` vb.)
-3. **Frontend**: Giriş/kayıt sayfaları, token'ı `localStorage`'da saklama,
-   her istekte `Authorization: Bearer <token>` header'ı gönderme
-4. **Korumalı rotalar** — giriş yapmamış kullanıcıyı login sayfasına yönlendirme
-
-## Hatırlatmalar
-
-- `res.json()` cevabı gönderir ama **fonksiyonu durdurmaz** → hata dönüşlerinde hep `return` kullan
-- `schema.prisma` değişince: `npx prisma migrate dev` + `npx prisma generate`
-- Backend: `npm run dev` (tsx watch — kaydedince otomatik yeniden başlar)
-- Frontend: `npm run dev`
-- Canlı adresler: Vercel (frontend), Render (backend), Neon (veritabanı)
+Şema değişince: `npx prisma migrate dev --name <ad>` + `npx prisma generate`
