@@ -2,6 +2,11 @@
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
 
 // Get a free hosted Postgres database in seconds: `npx create-db`
+enum Priority {
+  LOW
+  NORMAL
+  HIGH
+}
 
 generator client {
   provider = "prisma-client"
@@ -20,9 +25,11 @@ model User {
 }
 
 model Todo {
-  id     Int     @id @default(autoincrement())
-  text   String
-  done   Boolean @default(false)
-  userId Int
-  user   User    @relation(fields: [userId], references: [id])
+  id       Int       @id @default(autoincrement())
+  text     String
+  done     Boolean   @default(false)
+  priority Priority  @default(NORMAL)
+  dueDate  DateTime?
+  userId   Int
+  user     User      @relation(fields: [userId], references: [id])
 }

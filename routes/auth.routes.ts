@@ -2,13 +2,13 @@ import { Router } from "express";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { prisma } from "../prisma";
-import { authSchema } from "../schemas";
+import {  loginSchema, registerSchema } from "../schemas";
 import { validate } from "../middleware/validate";
 
 const router = Router();
 
 
-router.post("/register",validate(authSchema), async(req,res)=>{
+router.post("/register",validate(registerSchema), async(req,res)=>{
 
     const { email, password } = req.body;
    
@@ -39,7 +39,7 @@ router.post("/register",validate(authSchema), async(req,res)=>{
     res.status(201).json({ token });
 })
 
-router.post("/login",validate(authSchema), async(req,res)=>{
+router.post("/login",validate(loginSchema), async(req,res)=>{
 
    const { email, password } = req.body;
     const user =await prisma.user.findUnique({where:{email}});
