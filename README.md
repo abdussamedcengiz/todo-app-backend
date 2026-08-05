@@ -1,5 +1,7 @@
 # To-Do App — Backend
 
+![Testler](https://github.com/abdussamedcengiz/todo-app-backend/actions/workflows/test.yml/badge.svg)
+
 Kullanıcı girişli bir yapılacaklar uygulamasının REST API'si.
 Her kullanıcı yalnızca kendi görevlerini görebilir.
 
@@ -23,9 +25,12 @@ Her kullanıcı yalnızca kendi görevlerini görebilir.
 - Kayıt / giriş, şifreler bcrypt ile hash'lenir
 - JWT tabanlı kimlik doğrulama (7 gün geçerli)
 - Görev CRUD işlemleri, kullanıcı bazlı yetkilendirme
-- Zod ile istek doğrulama
+- Görevlerde öncelik (düşük / normal / yüksek) ve son tarih
+- Akıllı sıralama: tamamlanmamışlar önce, ardından yaklaşan son tarihe göre
+- Zod ile istek doğrulama, her endpoint için ayrı şema
 - Katmanlı mimari (routes / middleware / schemas)
 - Merkezi hata yönetimi
+- Otomatik testler (Vitest + Supertest), her push'ta CI üzerinde çalışır
 
 ## Kurulum
 
@@ -61,8 +66,11 @@ Kimlik doğrulama gerektiren istekler `Authorization: Bearer <token>` başlığ�
 | POST | `/todos` | Görev ekle | ✔ |
 | PUT | `/todos/:id` | Tamamlandı durumunu değiştir | ✔ |
 | PUT | `/todos/:id/text` | Görev metnini güncelle | ✔ |
+| PUT | `/todos/:id/priority` | Görev önceliğini güncelle | ✔ |
 | DELETE | `/todos/:id` | Görevi sil | ✔ |
 | DELETE | `/todos/completed/all` | Tamamlananları sil | ✔ |
+
+Yetkisiz erişim `404` döner (`403` değil) — kaynağın varlığı sızdırılmaz.
 
 ### Örnek istekler
 
@@ -75,21 +83,49 @@ curl -X POST https://todo-app-backend-caori.onrender.com/register \
 # Görevleri listele
 curl https://todo-app-backend-caori.onrender.com/todos \
   -H "Authorization: Bearer <TOKEN>"
+
+# Öncelikli, son tarihli görev ekle
+curl -X POST https://todo-app-backend-caori.onrender.com/todos \
+  -H "Authorization: Bearer <TOKEN>" \
+  -H "Content-Type: application/json" \
+  -d '{"text":"Rapor teslimi","priority":"HIGH","dueDate":"2026-09-01T00:00:00.000Z"}'
 ```
 
 ### Doğrulama kuralları
 
 | Alan | Kural |
 |---|---|
-| `email` | Geçerli e-posta formatı |
-| `password` | En az 6 karakter |
+| `email` | Geçerli e-posta formatı (kayıtta) |
+| `password` | En az 6 karakter (kayıtta) |
 | `text` | 1–200 karakter |
+| `priority` | `LOW` \| `NORMAL` \| `HIGH` |
+| `dueDate` | ISO 8601 tarih metni, opsiyonel |
+
+Girişte doğrulama daha gevşektir (sadece alanların dolu olması aranır) —
+kuralların sonradan sıkılaştırılması eski kullanıcıları kilitlemesin diye.
+
+## Testler
+
+```bash
+npm test
+```
+
+Vitest + Supertest ile 10 test:
+
+| Dosya | Kapsam |
+|---|---|
+| `tests/auth.test.ts` | Kayıt, giriş, doğrulama kuralları, yanlış şifre reddi |
+| `tests/todos.test.ts` | Token kontrolü, kullanıcı izolasyonu, yetkisiz silme denemesi |
+
+Testler her push'ta GitHub Actions üzerinde, izole bir PostgreSQL konteynerinde
+otomatik olarak çalışır (bkz. `.github/workflows/test.yml`).
 
 ## Proje yapısı
 
 ```
 backend/
-├── server.ts           # Express kurulumu ve başlatma
+├── server.ts           # Sunucuyu başlatır
+├── app.ts              # Express kurulumu (test edilebilir)
 ├── prisma.ts           # PrismaClient (singleton)
 ├── schemas.ts          # Zod doğrulama şemaları
 ├── middleware/
@@ -99,13 +135,24 @@ backend/
 ├── routes/
 │   ├── auth.routes.ts  # /register, /login
 │   └── todo.routes.ts  # /todos
-└── prisma/
-    └── schema.prisma   # Veritabanı şeması
+├── tests/
+│   ├── auth.test.ts
+│   └── todos.test.ts
+├── prisma/
+│   └── schema.prisma   # Veritabanı şeması
+└── .github/workflows/
+    └── test.yml        # CI yapılandırması
 ```
 
 ## Veri modeli
 
 ```prisma
+enum Priority {
+  LOW
+  NORMAL
+  HIGH
+}
+
 model User {
   id       Int    @id @default(autoincrement())
   email    String @unique
@@ -114,11 +161,13 @@ model User {
 }
 
 model Todo {
-  id     Int     @id @default(autoincrement())
-  text   String
-  done   Boolean @default(false)
-  userId Int
-  user   User    @relation(fields: [userId], references: [id])
+  id       Int       @id @default(autoincrement())
+  text     String
+  done     Boolean   @default(false)
+  priority Priority  @default(NORMAL)
+  dueDate  DateTime?
+  userId   Int
+  user     User      @relation(fields: [userId], references: [id])
 }
 ```
 
