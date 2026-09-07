@@ -11,7 +11,9 @@ jobs:
 
     services:
       postgres:
-        image: postgres:16
+        # alpine: ayni PostgreSQL, belirgin sekilde kucuk imaj ->
+        # kosu basina daha kisa indirme suresi.
+        image: postgres:16-alpine
         env:
           POSTGRES_PASSWORD: postgres
           POSTGRES_DB: testdb
@@ -25,7 +27,12 @@ jobs:
 
     env:
       DATABASE_URL: postgresql://postgres:postgres@localhost:5432/testdb
-      JWT_SECRET: ci-icin-test-anahtari
+
+      # DIKKAT: en az 32 karakter olmali (config/env.ts bunu denetler).
+      # Bu bir SIR DEGIL -- yalnizca CI'da uretilip atilan token'lari
+      # imzalar ve hicbir gercek veriye erisim vermez. Gercek anahtar
+      # Render panelinde durur.
+      JWT_SECRET: ci-icin-test-anahtari-en-az-32-karakter-uzunlugunda
 
     steps:
       - uses: actions/checkout@v4
@@ -38,4 +45,15 @@ jobs:
       - run: npm ci
       - run: npx prisma generate
       - run: npx prisma migrate deploy
-      - run: npm test -- --run
+
+      # Tip kontrolu testlerden ONCE: derlenmeyen bir kodun
+      # testlerini calistirmanin anlami yok, ve hata mesaji
+      # burada cok daha anlasilir olur.
+      #
+      # Onceden tsconfig yalnizca server.ts'i kapsadigi icin
+      # testler ve cogu dosya tip kontrolunun disindaydi.
+      - run: npm run typecheck
+
+      # "npm test" artik "vitest run" (izleme modu degil), bu yuzden
+      # "-- --run" eki gereksiz.
+      - run: npm test
