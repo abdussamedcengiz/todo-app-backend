@@ -1,94 +1,50 @@
 import { Router } from "express";
-import { prisma } from "../prisma";
+import * as todoController from "../controllers/todo.controller";
 import { auth } from "../middleware/auth";
-import { createTodoSchema, updatePrioritySchema, updateTextSchema} from "../schemas";
-import { validate } from "../middleware/validate";
+import {
+  createTodoSchema,
+  updatePrioritySchema,
+  updateTextSchema,
+} from "../schemas";
+import { validate, validateIdParam } from "../middleware/validate";
 
 const router = Router();
+
+// Bu router'in TAMAMI korumali: her istek once JWT dogrulamasindan
+// gecer. Tek satir, endpoint basina tekrar yok -- ve yeni bir
+// endpoint eklerken korumayi eklemeyi unutmak imkansiz.
 router.use(auth);
 
-// --- READ: Tüm görevleri getir ---    
+router.get("/", todoController.listTodos);
 
-router.get("/", async (req, res) => {
-  const todos = await prisma.todo.findMany({ where: { userId: req.userId },
-  orderBy:[{done:"asc"},{dueDate:"asc"},{id:"asc"}]
-});
-  res.json(todos);
-});
+router.post("/", validate(createTodoSchema), todoController.createTodo);
 
-// --- CREATE: Yeni görev ekle ---
-router.post("/",validate(createTodoSchema),    async (req, res) => {
-    const {text, priority, dueDate} = req.body;
+// DIKKAT: "/completed/all" bu dosyada "/:id"den SONRA tanimli ama
+// catisma YOK -- ":id" tek bir yol parcasi eslestirir, iki parcali
+// "/completed/all" ona uymaz. Yine de sabit yolu once yazmak,
+// ileride ":id/*" bicimli bir route eklenirse olusacak karisikligi
+// bastan onler.
+router.delete("/completed/all", todoController.deleteCompletedTodos);
 
-   
-  const newTodo = await prisma.todo.create({
-    
-    data: { text, priority,  dueDate:dueDate?new Date(dueDate):null, userId: req.userId! },
-  });
-  res.status(201).json(newTodo);
-});
+// validateIdParam: "/todos/abc" artik route'a hic ulasmiyor.
+// Onceden Number("abc") -> NaN Prisma'ya gidiyor ve 400 yerine
+// 500 donuyordu.
+router.put("/:id", validateIdParam, todoController.toggleTodo);
 
-// --- UPDATE: Tamamlandı/tamamlanmadı yap ---
-router.put("/:id",async(req,res)=>{
-    const id =Number(req.params.id);
+router.put(
+  "/:id/text",
+  validateIdParam,
+  validate(updateTextSchema),
+  todoController.updateTodoText,
+);
 
-    const todo =await prisma.todo.findFirst({where:{id,userId:req.userId}});
-    if(!todo){
-        return res.status(404).json({error:"Görev bulunamadı"})
-    }
+router.put(
+  "/:id/priority",
+  validateIdParam,
+  validate(updatePrioritySchema),
+  todoController.updateTodoPriority,
+);
 
-    const updated =await prisma.todo.update({
-        where:{id},
-        data:{done:!todo.done}
-    })
-    res.json(updated)
-
-
-})
-
-router.put("/:id/text",validate(updateTextSchema) ,async(req,res)=>{
-    const id =Number(req.params.id)
-    const todo =await prisma.todo.findFirst({where:{id,userId:req.userId}});
-
-    if(!todo){
-        return res.status(404).json({error:"Görev bulunamadı"})
-    }
-
-    const updated =await prisma.todo.update({
-        where:{id},
-        data:{text:req.body.text}
-    })
-    res.json(updated)
-})
-
-router.put("/:id/priority",validate(updatePrioritySchema    ) ,async(req,res)=>{
-    const id =Number(req.params.id)
-    const todo =await prisma.todo.findFirst({where:{id,userId:req.userId}});
-    if(!todo){
-        return res.status(404).json({error:"Görev bulunamadı"})
-    }
-    const updated=await prisma.todo.update({
-        where:{id},
-        data:{priority:req.body.priority}
-    })
-    res.json(updated)
-})
-
-router.delete("/:id",async(req,res)=>{
-    const id =Number(req.params.id)
-    const todo=await prisma.todo.findFirst({where:{id,userId:req.userId}});
-    if(!todo){
-        return res.status(404).json({error:"Görev bulunamadi"})
-
-    }
-
-    await prisma.todo.delete({where:{id}});
-    res.status(204).send();
-})
-
-router.delete("/completed/all", async (req, res) => {
-  await prisma.todo.deleteMany({ where: { done: true, userId: req.userId } });
-  res.status(204).send();
-});
+router.delete("/:id", validateIdParam, todoController.deleteTodo);
 
 export default router;
