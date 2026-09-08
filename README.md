@@ -56,7 +56,25 @@ cp .env.example .env        # Windows: copy .env.example .env
 | `JWT_SECRET` | ✔ | **En az 32 karakter.** Kısaysa sunucu başlamaz. |
 | `PORT` | – | Varsayılan `5000` |
 | `NODE_ENV` | – | `development` \| `test` \| `production` |
-| `CORS_ORIGINS` | – | İzin verilen adresler, virgülle ayrılmış |
+| `CORS_ORIGINS` | production'da ✔ | İzin verilen arayüz adresleri, virgülle ayrılmış. `NODE_ENV=production` iken **tanımsızsa sunucu başlamaz.** |
+
+> ### ⚠️ Canlıda `CORS_ORIGINS` girilmeden sunucu açılmaz
+>
+> Bu kasıtlı. İzin verilen adresler eskiden `app.ts` içine yazılıydı;
+> ortam değişkenine taşındıklarında geliştirme varsayılanı
+> `http://localhost:5173` oldu. Değişken panelde girilmezse sunucu
+> sorunsuz açılır, sağlık kontrolünden geçer — ama canlı arayüzün her
+> isteği tarayıcıda CORS'a takılır ve sunucu tarafında hiçbir hata
+> görünmediği için sebebini bulmak zordur.
+>
+> Render'da girilecek değer (yalnızca canlı arayüzün adresi):
+>
+> ```
+> https://todo-app-frontend-puce-nine.vercel.app
+> ```
+>
+> Yerel geliştirmede `.env` dosyasındaki `NODE_ENV=development` bu kuralı
+> devre dışı bırakır; localhost varsayılanı orada geçerli kalır.
 
 `JWT_SECRET` üretmek için:
 

@@ -50,16 +50,38 @@ const schema = z.object({
   // Artik panelden degistirilebilir.
   //
   // Tanimsizsa gelistirme varsayilani kullanilir.
-  CORS_ORIGINS: z
-    .string()
-    .optional()
-    .transform((value) =>
-      (value ?? "http://localhost:5173")
-        .split(",")
-        .map((origin) => origin.trim())
-        .filter(Boolean),
-    ),
-});
+  // Production'da ZORUNLU -- asagidaki superRefine'a bak.
+  CORS_ORIGINS: z.string().optional(),
+})
+  .superRefine((data, ctx) => {
+    // CANLIDA SESSIZCE LOCALHOST'A DUSMESIN.
+    //
+    // Bu deger onceden app.ts icine yazili bir listeydi ve canli arayuzun
+    // adresi de oradaydi. Ortam degiskenine tasindiginda varsayilan
+    // "http://localhost:5173" oldu: degisken panelde girilmezse sunucu
+    // sorunsuz aciliyor, saglik kontrolunden geciyor, ama canli arayuzun
+    // her istegi tarayicida CORS'a takiliyor. Sunucu tarafinda hicbir
+    // hata gorunmedigi icin sebebini bulmak zor.
+    //
+    // Eksik yapilandirma sessiz bir kirilma degil, acik bir hata olmali.
+    if (data.NODE_ENV === "production" && !data.CORS_ORIGINS) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["CORS_ORIGINS"],
+        message:
+          "NODE_ENV=production iken CORS_ORIGINS zorunlu. Arayuzun adresini yaz (birden fazlaysa virgulle ayir), ornek: https://todo-app-frontend-puce-nine.vercel.app",
+      });
+    }
+  })
+  .transform((data) => ({
+    ...data,
+    // Gelistirme varsayilani: yerelde Vite bu portta calisiyor.
+    // Production'da bu dala hic dusulmez, yukarida zorunlu tutuluyor.
+    CORS_ORIGINS: (data.CORS_ORIGINS ?? "http://localhost:5173")
+      .split(",")
+      .map((origin) => origin.trim())
+      .filter(Boolean),
+  }));
 
 const parsed = schema.safeParse(process.env);
 
