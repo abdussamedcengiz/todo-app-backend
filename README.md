@@ -6,7 +6,7 @@
 Kullanıcı girişli bir yapılacaklar uygulamasının REST API'si.
 Her kullanıcı yalnızca kendi görevlerini görebilir.
 
-**Canlı API:** https://todo-app-backend-caori.onrender.com
+**Canlı API:** https://todo-app-backend-ca6n.onrender.com
 **Frontend repo:** https://github.com/abdussamedcengiz/todo-app-frontend
 **Canlı uygulama:** https://todo-app-frontend-puce-nine.vercel.app
 
@@ -115,16 +115,16 @@ Yetkisiz erişim `404` döner (`403` değil) — kaynağın varlığı sızdır�
 
 ```bash
 # Kayıt
-curl -X POST https://todo-app-backend-caori.onrender.com/register \
+curl -X POST https://todo-app-backend-ca6n.onrender.com/register \
   -H "Content-Type: application/json" \
   -d '{"email":"ornek@mail.com","password":"123456"}'
 
 # Görevleri listele
-curl https://todo-app-backend-caori.onrender.com/todos \
+curl https://todo-app-backend-ca6n.onrender.com/todos \
   -H "Authorization: Bearer <TOKEN>"
 
 # Öncelikli, son tarihli görev ekle
-curl -X POST https://todo-app-backend-caori.onrender.com/todos \
+curl -X POST https://todo-app-backend-ca6n.onrender.com/todos \
   -H "Authorization: Bearer <TOKEN>" \
   -H "Content-Type: application/json" \
   -d '{"text":"Rapor teslimi","priority":"HIGH","dueDate":"2026-09-01T00:00:00.000Z"}'
