@@ -3,9 +3,14 @@ import request from "supertest";
 import app from "../app";
 import { prisma } from "../prisma";
 
-const userA = `a-${Date.now()}@example.com`;
-const userB = `b-${Date.now()}@example.com`;
-const password = "123456";
+// Bu dosyanin kendi alan adi: temizligi auth testlerine dokunmasin.
+// (Ayrintili gerekce tests/auth.test.ts basinda.)
+const DOMAIN = "@todos.test.local";
+
+const userA = `a-${Date.now()}${DOMAIN}`;
+const userB = `b-${Date.now()}${DOMAIN}`;
+// Kayit kurali en az 8 karakter (schemas.ts).
+const password = "test-sifresi-123";
 
 let tokenA = "";
 let tokenB = "";
@@ -74,6 +79,8 @@ describe("Görevler", () => {
 });
 
 afterAll(async () => {
-  await prisma.todo.deleteMany({ where: { user: { email: { contains: "@example.com" } } } });
-  await prisma.user.deleteMany({ where: { email: { contains: "@example.com" } } });
+  await prisma.todo.deleteMany({
+    where: { user: { email: { endsWith: DOMAIN } } },
+  });
+  await prisma.user.deleteMany({ where: { email: { endsWith: DOMAIN } } });
 });

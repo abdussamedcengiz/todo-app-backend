@@ -5,8 +5,17 @@
     "moduleResolution": "NodeNext",
     "esModuleInterop": true,
     "strict": true,
+    // Dizi ve nesne erisimlerinin "undefined" donebilecegini hatirlatir.
+    // req.params.id gibi degerlerde gercek hatalari yakalar.
+    "noUncheckedIndexedAccess": true,
     "skipLibCheck": true,
-    "outDir": "dist"
+    "outDir": "dist",
+    // "npm run typecheck" yalnizca kontrol eder, dosya uretmez.
+    "noEmit": true
   },
-  "include": ["server.ts"]
+  // ONCEDEN yalnizca ["server.ts"] vardi. TypeScript oradan
+  // ERISILEN dosyalari kontrol ediyor, digerlerini hic gormuyordu:
+  // testler ve import edilmeyen her dosya tip kontrolunun DISINDAYDI.
+  "include": ["**/*.ts"],
+  "exclude": ["node_modules", "generated", "dist"]
 }
