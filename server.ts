@@ -4,6 +4,19 @@ import { prisma } from "./prisma";
 
 const server = app.listen(env.PORT, () => {
   console.log(`Sunucu çalışıyor: http://localhost:${env.PORT} (${env.NODE_ENV})`);
+
+  // CORS LISTESI ACILISTA YAZILIYOR.
+  //
+  // Bu satir gercek bir olaydan sonra eklendi: panele CORS_ORIGINS
+  // olarak yanlis bir adres girilmisti. Sunucu sorunsuz acildi,
+  // /health 200 dondu, loglarda hicbir hata yoktu -- ama tarayici
+  // canli arayuzun her istegini CORS'a takti. Disaridan bakan biri
+  // icin "her sey calisiyor" gorunuyordu.
+  //
+  // Sunucunun HANGI adresleri kabul ettigini yazmak, bu hatayi
+  // loglara tek bakista gorunur kilar. Degerler zaten gizli degil;
+  // istemcinin adresi her cevapta zaten geri gonderiliyor.
+  console.log(`CORS izinli adresler: ${env.CORS_ORIGINS.join(", ")}`);
 });
 
 // --- DUZGUN KAPANMA (graceful shutdown) ---
